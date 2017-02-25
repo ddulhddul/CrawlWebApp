@@ -19,23 +19,30 @@ https://www.npmjs.com/package/google-images-scraper
 $ npm install google-images-scraper --save
 
 */
-
+var express = require('express');
 var GoogleScraper = require('google-scraper');
 var urlencode = require('urlencode');
-var keyword = urlencode('호호롤ㄹ');
 
-var scrape = new GoogleScraper({
-  keyword: keyword,
-  language: "kr",
-  tld:"com",
-  results: 100
-}); 
-scrape.getGoogleLinks.then(function(value) {
-	console.log(111);
- 	console.log(value);
-}).catch(function(e) {
-	console.log(222);
-	console.log(e);
+var app = express();
+app.listen('3003', function(){
+	console.log('3003 connected...')
+})
+
+app.get('/scrape', function(req,res){
+	var keyword = urlencode('avcc');
+	var scrape = new GoogleScraper({
+	  keyword: keyword,
+	  language: "kr",
+	  tld:"com",
+	  results: 100
+	}); 
+	scrape.getGoogleLinks.then(function(value) {
+		console.log(111);
+		res.send(value);
+	}).catch(function(e) {
+		console.log(222);
+		res.send(e);
+	})
 })
 
 /*var request = require('request');
