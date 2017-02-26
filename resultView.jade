@@ -1,0 +1,15 @@
+include main.jade
+.content
+  .row
+    each result in results
+      .col-sm-6.col-md-4
+        .thumbnail
+          a(href='#{result.url}')
+            img(src='#{result.src}', alt='Image')
+          .caption
+            h3 #{result.title}
+            p ...
+            p
+              a.btn.btn-primary(href='#', role='button') Button
+              a.btn.btn-default(href='#', role='button') Button
+  include footer.jade

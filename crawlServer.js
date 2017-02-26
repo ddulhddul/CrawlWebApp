@@ -5,47 +5,70 @@ var request = require('request');
 var tidy = require('htmltidy').tidy;
 var cheerio = require('cheerio');
 var jade = require('jade');
+var bodyParser = require('body-parser');
 
 var app = express();
 app.set('view engine', 'jade');
 app.set('views', './');
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.listen('3003', function(){
 	console.log('3003 connected...')
 })
 
+function validate(src){
+	if(src.indexOf('http://') == -1) return false;
+	else if(src.indexOf('.ico') != -1) return false;
+	else if(src.indexOf('.png') != -1) return false;
+	else if(src.indexOf('.gif') != -1) return false;
+	return true;
+}
+
 var urlRequest = function (param, i, result) {
 	return new Promise(function (resolve, reject) {
-		
-		console.log('url :::', param[i])
-		if(param[i]){
-			request(param[i], function (error, response, body) {
-				if (error) reject('Unexpected Error :::');
-				var $ = cheerio.load(body);
-				var postElements = $("img");
-				postElements.each(function(i, obj) {
-					var src = obj.attribs.src;
-					if(src){
-			  			if(src.indexOf('http://') != -1){
-			  				result.push(src);
-			  			}
-					}
-				});
-				
-				urlRequest(param, i+1, result)
-				.then(function (r) {
-					resolve(r);
-				}, function (error) {
-					res.send('Error'+error);
-				});
+		var url = param[i];
+		console.log('url :::', url)
+		if(url){
+			request(url, function (error, response, body) {
+				try {
+					if (error) reject('Unexpected Error :::');
+					
+					var $ = cheerio.load(body);
+					var title = 'Title :::';
+					if($("title")) title = $("title").text();
+
+					var postElements = $("img");
+					postElements.each(function(i, obj) {
+						var src = obj.attribs.src;
+						if(src) if(result[src]==undefined) if(validate(src)) result.push({
+							src: src,
+							url: url,
+							title: title
+						});
+					});
+					
+					urlRequest(param, i+1, result)
+					.then(function (r) {
+						resolve(r);
+					}, function (error) {
+						res.send('Error'+error);
+					});
+				} catch(e) {
+					resolve(result);
+					console.log('request Error :::', e);
+				}
 			})
 		}else resolve(result);
 	});
 };
 
+app.get('/main', function(req,res){
+	res.render('main');
+})
 
-app.get('/scrape', function(req,res){
-	
-	var keyword = urlencode('하하호호');
+app.post('/main', function(req,res){
+	console.log('req :::n\n', req)
+	var keyword = urlencode(req.body.name);
 	var scrape = new GoogleScraper({
 	  keyword: keyword,
 	  language: "kr",
@@ -56,8 +79,9 @@ app.get('/scrape', function(req,res){
 		console.log('GOOGLE SEARCH SUCCESS :::');
 		urlRequest(value, 0, [])
 		.then(function (result) {
-			res.render('main', {
-				srcs: result
+			console.log('result ::: \n', result);
+			res.render('resultView', {
+				results: result
 			});
 		}, function (error) {
 			res.send('url request Call Erro :::\n'+error);
